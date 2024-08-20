@@ -78,6 +78,7 @@ type SQLCmdArguments struct {
 	EnableColumnEncryption      bool
 	ChangePassword              string
 	ChangePasswordAndExit       string
+	TLSMin                      string
 	// Keep Help at the end of the list
 	Help bool
 }
@@ -117,6 +118,7 @@ const (
 	errorsToStderr          = "errors-to-stderr"
 	format                  = "format"
 	encryptConnection       = "encrypt-connection"
+	tlsMin                  = "tls-min"
 	screenWidth             = "screen-width"
 	fixedTypeWidth          = "fixed-type-width"
 	variableTypeWidth       = "variable-type-width"
@@ -404,6 +406,7 @@ func setFlags(rootCmd *cobra.Command, args *SQLCmdArguments) {
 
 	rootCmd.Flags().StringVarP(&args.ApplicationIntent, applicationIntent, "K", "default", localizer.Sprintf("Declares the application workload type when connecting to a server. The only currently supported value is ReadOnly. If %s is not specified, the sqlcmd utility will not support connectivity to a secondary replica in an Always On availability group", localizer.ApplicationIntentFlagShort))
 	rootCmd.Flags().StringVarP(&args.EncryptConnection, encryptConnection, "N", "default", localizer.Sprintf("This switch is used by the client to request an encrypted connection"))
+	rootCmd.Flags().StringVarP(&args.TLSMin, tlsMin, "T", "", localizer.Sprintf("This switch is used by the client to request a minimum version of the TLS protocol"))
 	// Can't use NoOptDefVal until this fix: https://github.com/spf13/cobra/issues/866
 	//rootCmd.Flags().Lookup(encryptConnection).NoOptDefVal = "true"
 	rootCmd.Flags().StringVarP(&args.Format, format, "F", "horiz", localizer.Sprintf("Specifies the formatting for results"))
@@ -468,6 +471,15 @@ func normalizeFlags(cmd *cobra.Command) error {
 				return pflag.NormalizedName(name)
 			default:
 				err = invalidParameterError("-N", v, "m[andatory]", "yes", "1", "t[rue]", "disable", "o[ptional]", "no", "0", "f[alse]", "s[trict]")
+				return pflag.NormalizedName("")
+			}
+		case tlsMin:
+			value := strings.ToLower(v)
+			switch value {
+			case "1.1", "1.2", "1.3":
+				return pflag.NormalizedName(name)
+			default:
+				err = invalidParameterError("-T", v, "1.1", "1.2", "1.3")
 				return pflag.NormalizedName("")
 			}
 		case format:
@@ -699,6 +711,7 @@ func setConnect(connect *sqlcmd.ConnectSettings, args *SQLCmdArguments, vars *sq
 	default:
 		connect.Encrypt = args.EncryptConnection
 	}
+	connect.TLSMin = args.TLSMin
 	connect.PacketSize = args.PacketSize
 	connect.WorkstationName = args.WorkstationName
 	connect.LogLevel = args.DriverLoggingLevel

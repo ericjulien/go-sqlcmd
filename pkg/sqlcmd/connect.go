@@ -32,6 +32,7 @@ type ConnectSettings struct {
 	Password string
 	// Encrypt is the choice of encryption
 	Encrypt string
+	TLSMin  string
 	// PacketSize is the size of the packet for TDS communication
 	PacketSize int
 	// LoginTimeoutSeconds specifies the timeout for establishing a connection
@@ -163,6 +164,11 @@ func (connect ConnectSettings) ConnectionString() (connectionString string, err 
 	if connect.ChangePassword != "" {
 		query.Set(msdsn.ChangePassword, connect.ChangePassword)
 	}
+
+	if connect.TLSMin != "" {
+		query.Set(msdsn.TLSMin, connect.TLSMin)
+	}
+
 	connectionURL.RawQuery = query.Encode()
 	return connectionURL.String(), nil
 }
